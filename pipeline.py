@@ -18,7 +18,9 @@ async def run(query="임영웅", limit=5, dry_run=False):
     if errs:
         print("ENV missing:", errs); return
     items=await search_news(query, display=limit, client_id=s.NAVER_CLIENT_ID, client_secret=s.NAVER_CLIENT_SECRET)
-    print(f"수집 {len(items)}건")
+    # 제목에 임영웅 없는 연관 뉴스(고양시장 등) 제외
+    items = [it for it in items if "임영웅" in it.title]
+    print(f"수집 {len(items)}건 (임영웅 필터 후)")
     # Instagram pool
     ig_urls=await fetch_instagram_images(limit=limit)
     print(f"인스타 {len(ig_urls)}장")
