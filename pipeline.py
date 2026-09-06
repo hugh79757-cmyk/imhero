@@ -56,5 +56,24 @@ async def run(query="임영웅", limit=5, dry_run=False):
 
 if __name__=="__main__":
     import sys
-    lim=int(sys.argv[1]) if len(sys.argv)>1 else 5
+    publish="--publish" in sys.argv
+    args=[a for a in sys.argv[1:] if not a.startswith("--")]
+    lim=int(args[0]) if args else 5
     asyncio.run(run(limit=lim, dry_run=False))
+    if publish:
+        # 발행 단계 — 최근 draft 중 원문 미발행 5건 순차
+        import pathlib, json, subprocess
+        drafts=sorted(pathlib.Path("data/drafts").glob("*.md"))[-5:]
+        for f in drafts:
+            txt=f.read_text(encoding="utf-8")
+            title=txt.splitlines()[0].lstrip("# ").strip()
+            body="\n".join(txt.splitlines()[1:])
+            # body는 이미 원문 1회 포함 — 그대로 전달
+            print(f" publishing {f.name} ...")
+            # publisher thin wrapper가 auto_publish.py --one 호출
+            from publishers.tistory import publish_one as pub
+            import asyncio as _aio
+            res=_aio.run(pub(title, body, "임영웅 콘서트 소식"))
+            print(res.get("stdout","")[:800])
+            if res.get("returncode",1)!=0:
+                print(f" publish fail {f.name} {res.get('stderr','')[:500]}")
